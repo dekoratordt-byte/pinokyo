@@ -1,8 +1,9 @@
+
 <!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Sonsuz Döngülü Kağıt Tiyatrosu</title>
@@ -12,16 +13,21 @@
         
         :root { --curtain-color: #800000; }
 
+        html, body {
+            height: 100%;
+            height: -webkit-fill-available;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
         body {
             background-color: #f0f0f0;
             color: #1a1a1a;
             font-family: 'Playfair Display', serif;
-            margin: 0;
-            overflow: hidden;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
             background-image: url("resimler/arka.jpg");
             background-size: cover;
             background-position: center;
@@ -69,8 +75,7 @@
             position: relative;
             width: 100vh; 
             height: 100vh;
-            background: #fff;
-            box-shadow: 0 25px 60px rgba(0,0,0,0.4);
+            background: transparent; 
             overflow: hidden;
             z-index: 10;
             display: flex;
@@ -88,6 +93,7 @@
             background-image: url('resimler/cerceve.png');
             background-size: 100% 100%;
             background-repeat: no-repeat;
+            background-color: transparent;
             pointer-events: none;
             z-index: 60;
         }
@@ -101,13 +107,14 @@
             display: flex;
             overflow: hidden;
             z-index: 20;
+            background: #fff;
         }
 
         .scroll-content {
             display: flex;
             will-change: transform;
             align-items: center;
-          }
+        }
 
         .crankie-image {
             height: 100%;
@@ -226,10 +233,14 @@
             .theatre-box { width: 90vw; height: 90vw; }
             .controls-group { margin-left: 0; margin-top: 20px; }
         }
+        
+        /* iPhone Yatayda Maksimum Alan Kullanımı */
+        @media screen and (orientation: landscape) and (max-device-width: 932px) {
+            .theatre-box { width: 100vh; height: 100vh; }
+        }
     </style>
 </head>
 <body>
-
     <div id="loadingScreen">
         <div class="crank-label">YÜKLENİYOR...</div>
         <div class="crank-wrapper loader-spin">
@@ -302,16 +313,15 @@
         let currentRotation = 0; 
         let lastAngle = 0;
         let isDragging = false;
-        const sensitivity = 5; 
         const CURTAIN_OPEN_THRESHOLD = 360; 
         let musicStartedOnce = false; 
 
-        // Yükleme Ekranı Kontrolü
         window.addEventListener('load', () => {
             const loader = document.getElementById('loadingScreen');
             loader.style.opacity = '0';
             setTimeout(() => {
                 loader.style.display = 'none';
+                window.scrollTo(0, 1); // Safari adres çubuğunu gizlemeye zorla
             }, 500);
         });
 
@@ -326,6 +336,9 @@
             const docEl = document.documentElement;
 
             if (isLandscape) {
+                // iPhone için zorunlu scroll ve yükseklik düzeltmesi
+                window.scrollTo(0, 1);
+                
                 if (!document.fullscreenElement && !document.webkitFullscreenElement) {
                     if (docEl.requestFullscreen) docEl.requestFullscreen();
                     else if (docEl.webkitRequestFullscreen) docEl.webkitRequestFullscreen();
@@ -365,9 +378,15 @@
             } else {
                 curtainLeft.style.transform = `translateX(-105%)`;
                 curtainRight.style.transform = `translateX(105%)`;
+                
+                const firstImg = scrollContent.querySelector('img');
+                const imageWidth = firstImg ? firstImg.offsetWidth : 0;
+                const dynamicSensitivity = imageWidth / 360;
+
                 const totalSetSize = scrollContent.scrollWidth / 2;
-                let scrollPos = ((currentRotation - CURTAIN_OPEN_THRESHOLD) * sensitivity);
+                let scrollPos = (currentRotation - CURTAIN_OPEN_THRESHOLD) * dynamicSensitivity;
                 const loopedScroll = scrollPos % totalSetSize;
+                
                 scrollContent.style.transform = `translateX(${-loopedScroll}px)`;
                 statusText.innerText = "";
             }
@@ -410,10 +429,18 @@
         window.addEventListener('touchend', stop);
 
         window.addEventListener('resize', () => {
-            if (isMobileDevice()) handleFullscreenLogic();
+            if (isMobileDevice()) {
+                handleFullscreenLogic();
+                // iPhone Safari'de adres çubuğu değişince yüksekliği tekrar hesapla
+                document.body.style.height = window.innerHeight + 'px';
+            }
+            updateStage();
         });
 
-        window.onload = updateStage;
+        window.onload = () => {
+            if (isMobileDevice()) document.body.style.height = window.innerHeight + 'px';
+            updateStage();
+        };
     </script>
 </body>
 </html>
